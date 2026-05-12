@@ -167,6 +167,20 @@ async function sendMessage() {
 
   const chatBox = document.getElementById("chat-box");
 
+  // Status/Loading Indicator
+  const statusDiv = document.createElement("div");
+  statusDiv.className = "loading-status";
+  statusDiv.innerHTML = `<div class="status-dot"></div><span class="status-text">Scanning sources...</span>`;
+  chatBox.appendChild(statusDiv);
+
+  // Phrases to rotate through
+  const phrases = ["Finding relevant info...", "Sifting through pages...", "Connecting the dots...", "Formulating answer..."];
+  let phraseIdx = 0;
+  const phraseInterval = setInterval(() => {
+    const textSpan = statusDiv.querySelector(".status-text");
+    if (textSpan) textSpan.textContent = phrases[phraseIdx++ % phrases.length];
+  }, 3000);
+
   // Display user message as a styled bubble
   const userDiv = document.createElement("div");
   userDiv.className = "message user";
@@ -179,6 +193,7 @@ async function sendMessage() {
   // Bot message container
   const botDiv = document.createElement("div");
   botDiv.className = "message bot";
+  botDiv.style.display = "none"; // Hide until we have real content
   chatBox.appendChild(botDiv);
 
   // LLM text streams into this span
@@ -210,6 +225,13 @@ async function sendMessage() {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
+
+      // As soon as the first chunk arrives, kill the loading state
+      if (statusDiv) {
+        clearInterval(phraseInterval);
+        statusDiv.remove(); // Remove the "Scanning sources" text
+        botDiv.style.display = "block"; // Show the bot bubble
+      }
 
       buffer += decoder.decode(value, { stream: true });
 
