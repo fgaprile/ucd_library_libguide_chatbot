@@ -118,4 +118,7 @@ This project uses `Pixi` for environment and dependency management on a Linux x8
 > [!WARNING]
 > UNDER CONSTRUCTION
 ## Examples LibBot Interactions:
+
+![LiBot Landing Page](docs/assets/libbot_landing_page.png)
+
 - 3-5 examples with a screenshot each
