@@ -52,8 +52,8 @@ function typeHTML(element, html, speed = 10) {
 // -------------------------------------------------------
 function buildSourcesHTML(ragResults) {
   let html =
-    `<br><br><br><br><strong>Reliable LibGuide resources from the UC Davis Library:</strong><br>` +
-    `<i>(Some resource links may require you to be signed into Kerberos or on ` +
+    `<br><br><br><br><span class="sources-header">Reliable LibGuide resources from the UC Davis Library:</span>` +
+    ` <i>(Some resource links may require you to be signed into Kerberos or on ` +
     `the UC Davis Library VPN)</i><br><br>`;
 
   const grouped = new Map();
@@ -75,7 +75,7 @@ function buildSourcesHTML(ragResults) {
   });
 
   grouped.forEach((guide, title) => {
-    html += `• <a href="${guide.section_url}" target="_blank"><strong>${title}</strong></a><br>`;
+    html += `• <a href="${guide.section_url}" target="_blank" class="sources-guide-link">${title}</a><br>`;
     guide.resources.forEach((urls, section_title) => {
       html += `&nbsp;&nbsp;&nbsp;&nbsp;↳ <a href="${urls.external_url}" target="_blank">${section_title}</a><br>`;
     });
@@ -83,6 +83,148 @@ function buildSourcesHTML(ragResults) {
   });
 
   return html;
+}
+
+// -------------------------------------------------------
+// Auto-link guide titles and section names in the summary.
+//
+// Guide titles: matched inside <strong>, <em>, or as plain
+// text. The link wraps whatever tag is present (or just the
+// text) so bold/italic styling is preserved.
+//
+// Section names: matched inside <code> (LLM backtick style)
+// OR as plain text. Plain-text matches are wrapped in <code>
+// so they visually match the existing section-name style.
+//
+// Both use a DOM-walk approach to avoid regex false-positives
+// inside existing <a> tags or HTML attributes.
+// Runs once after both LLM text and sources are fully rendered.
+// -------------------------------------------------------
+function linkSummaryToSources(llmSpan, ragResults) {
+  const guideMap = new Map();   // libguide_title -> section_url
+  const sectionMap = new Map(); // section_title  -> external_url
+
+  ragResults.forEach(result => {
+    result.sources.forEach(src => {
+      if (src.libguide_title && src.section_url)
+        guideMap.set(src.libguide_title, src.section_url);
+      if (src.section_title && src.external_url)
+        sectionMap.set(src.section_title, src.external_url);
+    });
+  });
+
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // Helper: is this node inside an <a> tag already?
+  function insideAnchor(node) {
+    let p = node.parentNode;
+    while (p && p !== llmSpan) {
+      if (p.nodeName === 'A') return true;
+      p = p.parentNode;
+    }
+    return false;
+  }
+
+  // Walk all text nodes in llmSpan, skipping nodes already inside <a>.
+  // For each matching title, split the text node and insert an <a> (and
+  // optionally a wrapping <code>) in its place.
+  function linkTextNodes(titleMap, wrapCode) {
+    // Collect text nodes first (walking mutates the tree)
+    const walker = document.createTreeWalker(llmSpan, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let n;
+    while ((n = walker.nextNode())) textNodes.push(n);
+
+    textNodes.forEach(textNode => {
+      if (insideAnchor(textNode)) return;
+
+      // Build one big alternation regex from all titles (longest first to
+      // avoid partial matches swallowing a longer title)
+      const sorted = [...titleMap.keys()].sort((a, b) => b.length - a.length);
+      if (!sorted.length) return;
+      const pattern = sorted.map(esc).join('|');
+      const re = new RegExp(`(${pattern})`, 'gi');
+
+      const text = textNode.textContent;
+      if (!re.test(text)) return;
+      re.lastIndex = 0;
+
+      const frag = document.createDocumentFragment();
+      let lastIndex = 0;
+      let match;
+
+      while ((match = re.exec(text)) !== null) {
+        const matched = match[0];
+        // Find the canonical-case key
+        const canonicalKey = sorted.find(
+          k => k.toLowerCase() === matched.toLowerCase()
+        );
+        if (!canonicalKey) continue;
+        const url = titleMap.get(canonicalKey);
+
+        // Text before the match
+        if (match.index > lastIndex) {
+          frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+        }
+
+        // Build the link (and optional code wrapper)
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        if (!wrapCode) a.style.textDecoration = 'none';
+        a.textContent = matched;
+
+        if (wrapCode) {
+          const code = document.createElement('code');
+          code.appendChild(a);
+          frag.appendChild(code);
+        } else {
+          frag.appendChild(a);
+        }
+
+        lastIndex = match.index + matched.length;
+      }
+
+      if (lastIndex === 0) return; // no matches — leave node alone
+      if (lastIndex < text.length) {
+        frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+      }
+
+      textNode.parentNode.replaceChild(frag, textNode);
+    });
+  }
+
+  // ── Guide titles ──────────────────────────────────────────
+  // Pass 1: tag-based matches (<strong> / <em>) — wrap the whole element in <a>
+  let html = llmSpan.innerHTML;
+  guideMap.forEach((url, title) => {
+    ['strong', 'em'].forEach(tag => {
+      const re = new RegExp(
+        `(?<!<a[^>]*>)(<${tag}>)(${esc(title)})(<\\/${tag}>)(?!<\\/a>)`, 'gi'
+      );
+      html = html.replace(re,
+        `<a href="${url}" target="_blank" style="text-decoration:none">$1$2$3</a>`
+      );
+    });
+  });
+  llmSpan.innerHTML = DOMPurify.sanitize(html);
+
+  // Pass 2: plain-text matches (DOM walk, skips existing <a> nodes)
+  linkTextNodes(guideMap, false);
+
+  // ── Section names ─────────────────────────────────────────
+  // Pass 1: <code>SectionName</code> tag-based matches
+  html = llmSpan.innerHTML;
+  sectionMap.forEach((url, title) => {
+    const re = new RegExp(`<code>(${esc(title)})<\\/code>`, 'gi');
+    html = html.replace(re,
+      `<code><a href="${url}" target="_blank">${title}</a></code>`
+    );
+  });
+  llmSpan.innerHTML = DOMPurify.sanitize(html);
+
+  // Pass 2: plain-text section matches (wrapped in <code> for visual consistency)
+  linkTextNodes(sectionMap, true);
 }
 
 // -------------------------------------------------------
@@ -269,6 +411,7 @@ async function sendMessage() {
       if (sourcesDiv._ragResults) {
         console.log("RAG results:", JSON.stringify(sourcesDiv._ragResults, null, 2));
         sourcesDiv.innerHTML = buildSourcesHTML(sourcesDiv._ragResults);
+        linkSummaryToSources(llmSpan, sourcesDiv._ragResults);
       }
     } catch (e) {
       console.error("Failed to render sources:", e);
