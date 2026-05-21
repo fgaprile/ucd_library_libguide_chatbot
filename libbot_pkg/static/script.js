@@ -477,10 +477,10 @@ function toggleEvilMode() {
   document.body.classList.toggle("evil", evilMode);
 
   if (evilMode) {
-    welcomeLogo.src = "assets/logo-dark.svg";
+    welcomeLogo.src = "assets/evil-dark.svg";
   } else {
     const isDark = document.body.classList.contains("dark");
-    welcomeLogo.src = isDark ? "assets/logo-dark.svg" : "assets/logo-light-transparent.svg";
+    welcomeLogo.src = isDark ? "assets/evil-dark.svg" : "assets/logo-light-transparent.svg";
   }
 }
 
@@ -507,7 +507,7 @@ function applyTheme(isDark) {
   iconSun.style.display = isDark ? "block" : "none";
   logo.src = isDark ? "assets/datalab-logo-gold.svg" : "assets/datalab-logo-black.svg";
   if (!evilMode) {
-    welcomeLogo.src = isDark ? "assets/logo-dark.svg" : "assets/logo-light-transparent.svg";
+    welcomeLogo.src = isDark ? "assets/logo-dark-transparent.svg" : "assets/logo-light-transparent.svg";
   }
 }
 
