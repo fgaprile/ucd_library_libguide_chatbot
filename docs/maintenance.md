@@ -44,6 +44,41 @@ All settings are defined in `config.py` and can be overridden via `.env`. The fo
 
 ---
 
+## Refreshing the Corpus
+
+The LibGuides corpus can be re-scraped and rebuilt at any time using the scripts in `pipeline/`. The full process takes roughly an hour, most of it embedding generation on CPU. Run the three steps in order from the project root:
+
+**Step 1 — scrape the current LibGuides (~10 min):**
+```bash
+pixi run python pipeline/scrape_guides.py
+```
+
+**Step 2 — validate the scrape:**
+```bash
+pixi run python pipeline/validate_scrape.py
+```
+
+**Step 3 — build embeddings and the new ChromaDB (~45–60 min):**
+```bash
+pixi run python pipeline/build_chromadb.py
+```
+
+All outputs are written to `*_new` paths next to the production data, so the live database is never touched while the server runs. Once the build completes, swap the new database in, keeping the old one as a rollback:
+
+```bash
+mv /dsl/libbot/data/chroma_db /dsl/libbot/data/chroma_db_old
+mv /dsl/libbot/data/chroma_db_new /dsl/libbot/data/chroma_db
+```
+
+Then verify retrieval (see [Verifying Functionality](#verifying-functionality)) and restart the server.
+
+> [!NOTE]
+> Step 2 exits non-zero if the scrape violates the data contract — do not proceed to Step 3 if validation fails. For per-script options, output schemas, and data notes, see the [Pipeline README](https://github.com/datalab-dev/ucd_library_libguide_chatbot/tree/main/pipeline).
+
+<br>
+
+---
+
 ## Running the Server
 
 LibBot requires two processes running simultaneously — Ollama and the LibBot package itself.

@@ -57,7 +57,7 @@ FastAPI (libbot_pkg)
 4. The top matching LibGuide documents, and sources, are retrieved and deduplicated
 5. A context-aware prompt (query + retrieved docs) is sent to Ollama
 6. Ollama streams its response back through FastAPI to the browser
-7. The browser renders the LLM summary, then displays the library sources below it
+7. The browser renders the LLM summary, then displays the library sources below it — each guide with a byline linking to its librarian authors' profile pages
 
 <br>
 
