@@ -64,6 +64,7 @@ function buildSourcesHTML(ragResults) {
       if (!grouped.has(src.libguide_title)) {
         grouped.set(src.libguide_title, {
           section_url: src.section_url,
+          authors: src.authors || [],
           resources: new Map(),
         });
       }
@@ -76,8 +77,18 @@ function buildSourcesHTML(ragResults) {
 
   grouped.forEach((guide, title) => {
     html += `• <a href="${guide.section_url}" target="_blank" class="sources-guide-link">${title}</a><br>`;
+    if (guide.authors.length) {
+      const names = guide.authors.map(a =>
+        a.profile_url
+          ? `<a href="${a.profile_url}" target="_blank" class="sources-author-link">${a.name || a.email}</a>`
+          : (a.name || a.email)
+      );
+      html += `&nbsp;&nbsp;&nbsp;<span class="sources-byline">by ${names.join(" · ")}</span><br>`;
+    }
     guide.resources.forEach((urls, section_title) => {
-      html += `&nbsp;&nbsp;&nbsp;&nbsp;↳ <a href="${urls.external_url}" target="_blank">${section_title}</a><br>`;
+      // Prose rows have no external_url — link to the guide page instead
+      const href = urls.external_url || urls.section_url;
+      html += `&nbsp;&nbsp;&nbsp;&nbsp;↳ <a href="${href}" target="_blank">${section_title}</a><br>`;
     });
     html += `<br>`;
   });

@@ -564,6 +564,19 @@ a:hover {
   font-weight: 700;
 }
 
+/* Author byline under each guide title in the sources list — muted, smaller
+   than resource links so it reads as metadata rather than content */
+.sources-byline {
+  font-size: 0.82rem;
+  color: var(--text-2);
+}
+
+.sources-byline a.sources-author-link,
+.sources-byline a.sources-author-link:hover {
+  color: inherit;
+  text-decoration: underline;
+}
+
 .message.bot em {
   font-size: 0.9em;
   color: var(--text-2);
