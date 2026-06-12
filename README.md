@@ -4,8 +4,8 @@
 > This project originated as a group collaboration back during 2025 Spring Quarter. The original team prototype was primarily built in R, along with Ollama; team member acknowledgements, resources and data store, and documentation can be found in the [[**v1.0b-STS195**]](https://github.com/datalab-dev/ucd_library_libguide_chatbot/tree/v1.0b-STS195) branch of this repository.
 
 > [!NOTE]
-> LibBot's corpus is based on UC Davis LibGuides scraped February 20th, 2025.
-> Updated library data will be incorporated in future iterations.
+> LibBot's corpus is based on UC Davis LibGuides scraped June 11th, 2026.
+> Corpus refreshes are now repeatable through the scraping pipeline — see the [`pipeline/` README](https://github.com/datalab-dev/ucd_library_libguide_chatbot/tree/main/pipeline).
 
 ## Current Contributors
 
@@ -93,6 +93,8 @@ This project uses `Pixi` for environment and dependency management on a Linux x8
   │   └── ...
   ├── research/                          # Model benchmarking — see dedicated README
   │   └── ...
+  ├── pipeline/                          # Corpus scraping/refresh pipeline — see dedicated README
+  │   └── ...
   ├── models/                            # Ollama models — see dedicated README
   │   └── ...
   │
@@ -103,6 +105,8 @@ This project uses `Pixi` for environment and dependency management on a Linux x8
 ### [**Dedicated `libbot_pkg/` README**](https://github.com/datalab-dev/2025_startup_libguide_chatbot/tree/libbot/libbot_pkg)
 
 ### [**Dedicated `research/` README**](https://github.com/datalab-dev/2025_startup_libguide_chatbot/tree/libbot/research)
+
+### [**Dedicated `pipeline/` README**](https://github.com/datalab-dev/ucd_library_libguide_chatbot/tree/main/pipeline)
 
 ### [**Dedicated `models/` README**](https://github.com/datalab-dev/ucd_library_libguide_chatbot/blob/main/docs/ollama.md)
 

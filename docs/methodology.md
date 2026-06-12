@@ -275,3 +275,13 @@ The analysis confirmed that meaningful similarity signal is concentrated in a sm
 number of top-ranked documents. A value of `top_k = 3` was selected as the default for LibBot, retrieving enough context for the LLM to synthesize a grounded response without overwhelming it with low-signal documents. The `top_k * 5` candidate fetch used in the deduplication step (described above) is applied on top of this, ensuring that 3 unique, high-quality texts are returned even in a corpus with ~70% duplication.
 
 <br>
+
+---
+
+## Corpus Refresh and Author Attribution (June 2026)
+
+The original corpus came from the R scraping pipeline built during the group prototype phase and had remained frozen since February 2025. In June 2026 the scraping layer was rebuilt in Python (see the [Pipeline README](https://github.com/datalab-dev/ucd_library_libguide_chatbot/tree/main/pipeline)) so the corpus can now be refreshed on demand. The new scraper reproduces the original row granularity — one row per resource link, with the resource name as the section title and its description as the retrievable text — while also capturing box-level prose that the R pipeline dropped. The refreshed corpus grew from 7,442 to 11,754 chunks across 210 guides. A validation script gates the pipeline: it checks the scrape against the data contract (schema, URL integrity, guide coverage) and compares it against the previous corpus to flag suspicious losses before any embeddings are generated.
+
+The refresh also introduced **author attribution**. Each LibGuide displays its librarians in a sidebar profile box, so the scraper takes these emails through the same library directory API the page itself calls, and stores each guide's authors (name, profile URL, email) as ChromaDB metadata. The retriever passes this through to the frontend, which renders a byline under each guide in the sources list; this links users directly to the responsible librarian's profile page, where full contact information lives.
+
+<br>

@@ -1,3 +1,4 @@
+import json
 from difflib import SequenceMatcher
 
 import chromadb
@@ -5,7 +6,20 @@ import torch
 from sentence_transformers import SentenceTransformer
 import time
 from .config import settings
-from .models import SearchResult, Source
+from .models import Author, SearchResult, Source
+
+
+def _parse_authors(metadata: dict) -> list[Author]:
+    """Decode the authors JSON string stored in ChromaDB metadata.
+
+    Older collections have no authors field; malformed values degrade to
+    an empty list rather than failing the search.
+    """
+    try:
+        entries = json.loads(metadata.get("authors") or "[]")
+        return [Author(**e) for e in entries if isinstance(e, dict)]
+    except (ValueError, TypeError):
+        return []
 
 
 class Retriever:
@@ -119,7 +133,8 @@ class Retriever:
                     section_title=metadata["chunk_title"],
                     libguide_url=metadata["libguide_url"],
                     section_url=metadata["chunk_url"],
-                    external_url=metadata["external_url"]
+                    external_url=metadata["external_url"],
+                    authors=_parse_authors(metadata),
                 )
             )
             

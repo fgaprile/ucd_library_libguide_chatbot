@@ -18,6 +18,13 @@ class ChatRequest(BaseModel):
 
 # ---- Response ----
 
+class Author(BaseModel):
+    """A librarian shown in a guide's sidebar profile box."""
+    name: str = ""
+    profile_url: str = ""
+    email: str = ""
+
+
 class Source(BaseModel):
     """A single guide/section where a result text was found."""
     libguide_title: str
@@ -25,6 +32,7 @@ class Source(BaseModel):
     libguide_url: str
     section_url: str
     external_url: str
+    authors: list[Author] = []
 
 
 class SearchResult(BaseModel):
