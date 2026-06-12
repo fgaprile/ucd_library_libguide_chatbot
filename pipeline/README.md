@@ -2,7 +2,9 @@
 
 Refreshes the RAG corpus end to end: scrape LibGuides → validate → embed
 and build ChromaDB. See `PIPELINE_PLAN.md` (repo root) for the full data
-contract these scripts satisfy.
+contract these scripts satisfy. On top of that contract's 8 columns, the
+pipeline adds a 9th — `authors`, the guide's sidebar librarian profiles
+(see Notes).
 
 ## Run order
 
@@ -56,9 +58,15 @@ CHROMA_DB_PATH=/dsl/libbot/data/chroma_db_new pixi run python test_retriever.py
   an email in a `<ucdlib-author-profile>` component; name and profile URL
   are resolved via the library directory API
   (`https://library.ucdavis.edu/wp-json/ucdlib-directory/person/<email>`),
-  cached per email. The field is stored in ChromaDB metadata as a string.
+  cached per email. The field is stored in ChromaDB metadata as a string,
+  but is not yet exposed in API responses — that would require extending
+  `Source` in `libbot_pkg/models.py` and the retriever.
 - Guides that 404 or redirect off `guides.library.ucdavis.edu` are skipped
   and listed at the end of the scrape log.
 - `validate_scrape.py` compares against the previous corpus
   (`text_full_libguide.csv`) and warns about guides that lost >50% of their
-  rows — worth a manual look before building the DB.
+  rows — worth a manual look before building the DB. It also validates
+  `authors`: every value must parse as a JSON list with name/profile_url/
+  email keys, and it fails outright if fewer than 50% of guides have at
+  least one author (a sign extraction broke). Guides legitimately without
+  a sidebar profile are listed as a warning (~10% as of June 2026).
